@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -9,16 +48,33 @@
       text-align: center;
       padding-top: 50px;
     }
+    #nameForm {
+      margin-top: 20px;
+      display: none;
+    }
+    input[type="text"] {
+      padding: 8px;
+      margin-right:  Fred10px;
+    }
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h2>Checking Your Location…</h2>
   <p id="status">Please allow location access.</p>
+  <div id="nameForm">
+    <input type="text" id="userName" placeholder="Enter your name" required>
+    <button onclick="submitName()">Submit</button>
+  </div>
 
   <script>
     const targetLat = 30.0768402;
     const targetLon = 31.2907355;
     const allowedDistance = 2000; // meters
+    const webAppUrl = "<YOUR_WEB_APP_URL>"; // Replace with your Apps Script web app URL
 
     function toRadians(degrees) {
       return degrees * Math.PI / 180;
@@ -35,15 +91,48 @@
       return R * c;
     }
 
+    async function submitName() {
+      const name = document.getElementById("userName").value.trim();
+      const userLat = window.userLat; // Stored from geolocation
+      const userLon = window.userLon;
+
+      if (!name) {
+        document.getElementById("status").textContent = "Please enter a valid name.";
+        return;
+      }
+
+      try {
+        const response = await fetch(webAppUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, latitude: userLat, longitude: userLon })
+        });
+        const result = await response.json();
+
+        document.getElementById("status").textContent = result.message;
+        if (result.status === "success") {
+          document.getElementById("nameForm").style.display = "none";
+          // Store name locally as a backup
+          let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
+          if (!attendees.includes(name)) {
+            attendees.push(name);
+            localStorage.setItem("attendees", JSON.stringify(attendees));
+          }
+        }
+      } catch (error) {
+        document.getElementById("status").textContent = "Error submitting name. Please try again.";
+      }
+    }
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(function(position) {
-        const userLat = position.coords.latitude;
-        const userLon = position.coords.longitude;
-        const distance = haversineDistance(userLat, userLon, targetLat, targetLon);
+        window.userLat = position.coords.latitude;
+        window.userLon = position.coords.longitude;
+        const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
         
         if (distance <= allowedDistance) {
-          document.getElementById("status").textContent = "Location confirmed. Redirecting…";
-          window.location.href = "https://forms.gle/bJchMmE33NHDjzju8";
+          document.getElementById("status").textContent = "Location confirmed. Please enter your name.";
+          document.getElementById("nameForm").style.display = "block";
         } else {
           document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
         }
