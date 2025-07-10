@@ -1,74 +1,58 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.5">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  <meta charset="UTF-8">
+  <title>Meeting Attendance Check</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
   </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Meeting Attendance Check&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>font-family: Arial, sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>text-align: center;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>padding-top: 50px;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;h2&gt;Checking Your Location…&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;p id="status"&gt;Please allow location access.&lt;/p&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const targetLat = 30.0768402;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const targetLon = 31.2907355;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const allowedDistance = 2000; // meters</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function toRadians(degrees) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return degrees * Math.PI / 180;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function haversineDistance(lat1, lon1, lat2, lon2) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const R = 6371000; // Earth radius in meters</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const dLat = toRadians(lat2 - lat1);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const dLon = toRadians(lon2 - lon1);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const a = Math.sin(dLat / 2) ** 2 +</p>
-<p class="p1"><span class="Apple-converted-space">                </span>Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *</p>
-<p class="p1"><span class="Apple-converted-space">                </span>Math.sin(dLon / 2) ** 2;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return R * c;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>if ("geolocation" in navigator) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>navigator.geolocation.getCurrentPosition(function(position) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const userLat = position.coords.latitude;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const userLon = position.coords.longitude;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const distance = haversineDistance(userLat, userLon, targetLat, targetLon);</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (distance &lt;= allowedDistance) {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>document.getElementById("status").textContent = "Location confirmed. Redirecting…";</p>
-<p class="p1"><span class="Apple-converted-space">          </span>window.location.href = "https://forms.gle/bJchMmE33NHDjzju8";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}, function(error) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById("status").textContent = "Location access denied or unavailable.";</p>
-<p class="p1"><span class="Apple-converted-space">      </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>document.getElementById("status").textContent = "Geolocation not supported by your browser.";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+  <h2>Checking Your Location…</h2>
+  <p id="status">Please allow location access.</p>
+
+  <script>
+    const targetLat = 30.0768402;
+    const targetLon = 31.2907355;
+    const allowedDistance = 2000; // meters
+
+    function toRadians(degrees) {
+      return degrees * Math.PI / 180;
+    }
+
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Earth radius in meters
+      const dLat = toRadians(lat2 - lat1);
+      const dLon = toRadians(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+                Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLon = position.coords.longitude;
+        const distance = haversineDistance(userLat, userLon, targetLat, targetLon);
+        
+        if (distance <= allowedDistance) {
+          document.getElementById("status").textContent = "Location confirmed. Redirecting…";
+          window.location.href = "https://forms.gle/bJchMmE33NHDjzju8";
+        } else {
+          document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
+        }
+      }, function(error) {
+        document.getElementById("status").textContent = "Location access denied or unavailable.";
+      });
+    } else {
+      document.getElementById("status").textContent = "Geolocation not supported by your browser.";
+    }
+  </script>
 </body>
 </html>
