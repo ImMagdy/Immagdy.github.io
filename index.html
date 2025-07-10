@@ -54,7 +54,7 @@
     }
     input[type="text"] {
       padding: 8px;
-      margin-right:  Fred10px;
+      margin-right: 10px;
     }
     button {
       padding: 8px 16px;
@@ -65,6 +65,8 @@
 <body>
   <h2>Checking Your Location…</h2>
   <p id="status">Please allow location access.</p>
+  <p>Please allow location access in your browser. If location fails, ensure location services are enabled on your device.</p>
+  <button id="retryButton" style="display: none;" onclick="location.reload()">Retry Location</button>
   <div id="nameForm">
     <input type="text" id="userName" placeholder="Enter your name" required>
     <button onclick="submitName()">Submit</button>
@@ -121,6 +123,7 @@
         }
       } catch (error) {
         document.getElementById("status").textContent = "Error submitting name. Please try again.";
+        document.getElementById("retryButton").style.display = "block";
       }
     }
 
@@ -135,12 +138,29 @@
           document.getElementById("nameForm").style.display = "block";
         } else {
           document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
+          document.getElementById("retryButton").style.display = "block";
         }
       }, function(error) {
-        document.getElementById("status").textContent = "Location access denied or unavailable.";
+        let errorMessage = "Location access denied or unavailable.";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Please allow location access in your browser and click Retry.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Unable to determine your location. Ensure location services are enabled and click Retry.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Check your connection and click Retry.";
+            break;
+          default:
+            errorMessage = "An error occurred while accessing your location. Please click Retry.";
+        }
+        document.getElementById("status").textContent = errorMessage;
+        document.getElementById("retryButton").style.display = "block";
       });
     } else {
-      document.getElementById("status").textContent = "Geolocation not supported by your browser.";
+      document.getElementById("status").textContent = "Geolocation not supported by your browser. Please use a modern browser like Chrome or Firefox.";
+      document.getElementById("retryButton").style.display = "block";
     }
   </script>
 </body>
