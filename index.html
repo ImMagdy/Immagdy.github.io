@@ -60,6 +60,10 @@
       padding: 8px 16px;
       cursor: pointer;
     }
+    #submitButton:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
   </style>
 </head>
 <body>
@@ -69,14 +73,14 @@
   <button id="retryButton" style="display: none;" onclick="location.reload()">Retry Location</button>
   <div id="nameForm">
     <input type="text" id="userName" placeholder="Enter your name" required>
-    <button onclick="submitName()">Submit</button>
+    <button id="submitButton" onclick="submitName()">Submit</button>
   </div>
 
   <script>
     const targetLat = 30.0768402;
     const targetLon = 31.2907355;
     const allowedDistance = 500; // meters
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbwML3WvuKdT-sj2vQLro_2JME37cAhTa4wDFojRdL1HM-PUqQl5FJ2B2nGemmwjCzw5/exec"; // Replace with your Apps Script web app URL
+    const webAppUrl = "<https://script.google.com/macros/s/AKfycbwML3WvuKdT-sj2vQLro_2JME37cAhTa4wDFojRdL1HM-PUqQl5FJ2B2nGemmwjCzw5/exec>"; // Replace with your Apps Script web app URL
 
     function toRadians(degrees) {
       return degrees * Math.PI / 180;
@@ -94,22 +98,34 @@
     }
 
     async function submitName() {
-      const name = document.getElementById("userName").value.trim();
-      const userLat = window.userLat; // Stored from geolocation
-      const userLon = window.userLon;
+      const nameInput = document.getElementById("userName");
+      const submitButton = document.getElementById("submitButton");
+      const name = nameInput.value.trim();
 
       if (!name) {
-        document.getElementById("status").textContent = "Please enter a valid name.";
+        document.getElementById("status").textContent = "Please enter a valid name (letters and spaces only).";
+        return;
+      }
+      if (!/^[a-zA-Z\s]+$/.test(name)) {
+        document.getElementById("status").textContent = "Name must contain only letters and spaces.";
         return;
       }
 
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting...";
+      document.getElementById("status").textContent = "Submitting your name...";
+
       try {
+        console.log("Sending POST request to:", webAppUrl);
+        console.log("Payload:", { name });
         const response = await fetch(webAppUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, latitude: userLat, longitude: userLon })
+          body: JSON.stringify({ name }),
+          mode: "cors" // Explicitly set CORS mode
         });
         const result = await response.json();
+        console.log("Response:", result);
 
         document.getElementById("status").textContent = result.message;
         if (result.status === "success") {
@@ -120,10 +136,16 @@
             attendees.push(name);
             localStorage.setItem("attendees", JSON.stringify(attendees));
           }
+        } else {
+          document.getElementById("retryButton").style.display = "block";
         }
       } catch (error) {
-        document.getElementById("status").textContent = "Error submitting name. Please try again.";
+        console.error("Fetch error:", error);
+        document.getElementById("status").textContent = "Error submitting name: " + error.message + ". Please try again.";
         document.getElementById("retryButton").style.display = "block";
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit";
       }
     }
 
