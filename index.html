@@ -66,85 +66,101 @@
     <div class="message" id="messageBox"></div>
   </div>
 
-  <script>
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbx8LxWRQVTywW1NyTx8d-KwQyVkZlJ68NxMjP0hPI_FTmke3zciytzgWXuW9iHAtdXH/exec";
+<script>
+  const targetLat = 30.0768402;
+  const targetLon = 31.2907355;
+  const allowedDistance = 9000; // meters (client-side)
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbwZsE3mwWwSblJfMDDVShKELp-q10H6bbvozn-fiuWvX_cV69r8CDv-XVD-gv2TEwsr/exec"; // from the deployment step
 
-    document.getElementById("attendanceForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+  function toRadians(degrees) { return degrees * Math.PI / 180; }
 
-      const submitBtn = document.getElementById("submitBtn");
-      const name = document.getElementById("name").value.trim();
-      const yearBatch = document.getElementById("yearBatch").value.trim();
-      const messageBox = document.getElementById("messageBox");
+  function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a = Math.sin(dLat/2) ** 2 +
+              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+              Math.sin(dLon/2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
 
-      messageBox.style.display = "none";
-      submitBtn.disabled = true;
+  async function submitName() {
+    const nameInput = document.getElementById("userName");
+    const submitButton = document.getElementById("submitButton");
+    const name = nameInput.value.trim();
 
-      if (!name || !yearBatch) {
-        showMessage("Please fill out all fields.", "error");
-        submitBtn.disabled = false;
-        return;
-      }
+    if (!name) { document.getElementById("status").textContent = "Please enter a valid name (letters and spaces only)."; return; }
+    if (!/^[a-zA-Z\s]+$/.test(name)) { document.getElementById("status").textContent = "Name must contain only letters and spaces."; return; }
 
-      if (!/^[\u0600-\u06FFa-zA-Z\s]+$/.test(name)) {
-        showMessage("Name must contain only letters and spaces.", "error");
-        submitBtn.disabled = false;
-        return;
-      }
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting...";
+    document.getElementById("status").textContent = "Submitting your name...";
 
-      if (isNaN(yearBatch) || yearBatch < 1900 || yearBatch > 2100) {
-        showMessage("Year batch must be between 1900 and 2100.", "error");
-        submitBtn.disabled = false;
-        return;
-      }
+    try {
+      const payload = {
+        name,
+        // Recommended: send coords so server confirms radius too
+        lat: window.userLat,
+        lon: window.userLon
+      };
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            sendAttendance(name, yearBatch, position.coords.latitude, position.coords.longitude);
-          },
-          error => {
-            showMessage("Unable to retrieve location.", "error");
-            submitBtn.disabled = false;
-          }
-        );
-      } else {
-        showMessage("Geolocation is not supported by this browser.", "error");
-        submitBtn.disabled = false;
-      }
-    });
-
-    function sendAttendance(name, yearBatch, lat, lon) {
-      fetch(webAppUrl, {
+      const response = await fetch(webAppUrl, {
         method: "POST",
-        body: JSON.stringify({
-          name: name,
-          yearBatch: yearBatch,
-          lat: lat,
-          lon: lon
-        }),
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        showMessage(data.message, data.status === "success" ? "success" : "error");
-      })
-      .catch(() => {
-        showMessage("An error occurred while submitting.", "error");
-      })
-      .finally(() => {
-        document.getElementById("submitBtn").disabled = false;
+        // 🔴 Required to avoid CORS preflight with Apps Script
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+        // no need for mode:"cors" — default is fine
       });
-    }
 
-    function showMessage(msg, type) {
-      const messageBox = document.getElementById("messageBox");
-      messageBox.textContent = msg;
-      messageBox.className = "message " + type;
-      messageBox.style.display = "block";
+      const result = await response.json();
+
+      document.getElementById("status").textContent = result.message;
+      if (result.status === "success") {
+        document.getElementById("nameForm").style.display = "none";
+        let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
+        if (!attendees.includes(name)) {
+          attendees.push(name);
+          localStorage.setItem("attendees", JSON.stringify(attendees));
+        }
+      } else {
+        document.getElementById("retryButton").style.display = "block";
+      }
+    } catch (error) {
+      document.getElementById("status").textContent = "Error submitting name: " + error.message + ". Please try again.";
+      document.getElementById("retryButton").style.display = "block";
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit";
     }
-  </script>
-</body>
-</html>
+  }
+
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      window.userLat = position.coords.latitude;
+      window.userLon = position.coords.longitude;
+      const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
+
+      if (distance <= allowedDistance) {
+        document.getElementById("status").textContent = "Location confirmed. Please enter your name.";
+        document.getElementById("nameForm").style.display = "block";
+      } else {
+        document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
+        document.getElementById("retryButton").style.display = "block";
+      }
+    }, function(error) {
+      let errorMessage = "Location access denied or unavailable.";
+      switch (error.code) {
+        case error.PERMISSION_DENIED: errorMessage = "Please allow location access in your browser and click Retry."; break;
+        case error.POSITION_UNAVAILABLE: errorMessage = "Unable to determine your location. Ensure location services are enabled and click Retry."; break;
+        case error.TIMEOUT: errorMessage = "Location request timed out. Check your connection and click Retry."; break;
+        default: errorMessage = "An error occurred while accessing your location. Please click Retry.";
+      }
+      document.getElementById("status").textContent = errorMessage;
+      document.getElementById("retryButton").style.display = "block";
+    });
+  } else {
+    document.getElementById("status").textContent = "Geolocation not supported by your browser. Please use a modern browser like Chrome or Firefox.";
+    document.getElementById("retryButton").style.display = "block";
+  }
+</script>
