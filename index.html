@@ -1,137 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Meeting Attendance Check</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 50px;
-        }
-        #nameForm {
-            margin-top: 20px;
-            display: none;
-        }
-        input[type="text"] {
-            padding: 8px;
-            margin-right: 10px;
-        }
-        button {
-            padding: 8px 16px;
-            cursor: pointer;
-        }
-        #submitButton:disabled {
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-    </style>
+  <title>ASUSH Attendance</title>
 </head>
 <body>
-    <h2>Checking Your Location…</h2>
-    <p id="status">Please allow location access.</p>
-    <p>Please allow location access in your browser. If location fails, ensure location services are enabled on your device.</p>
-    <button id="retryButton" style="display: none;" onclick="checkLocation()">Retry Location</button>
-    <div id="nameForm">
-        <input type="text" id="userName" placeholder="Enter your name" required>
-        <button id="submitButton" onclick="submitName()" disabled>Submit</button>
-    </div>
+  <h2>ASUSH Attendance</h2>
+  <form id="attendanceForm">
+    <label>Name:</label><br>
+    <input type="text" id="name" required><br><br>
+    <label>Year Batch:</label><br>
+    <input type="number" id="yearBatch" required><br><br>
+    <button type="submit">Submit</button>
+  </form>
 
-<script>
-  const targetLat = 30.0768402;
-  const targetLon = 31.2907355;
-  const allowedDistance = 9000; // meters (client-side)
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbwZsE3mwWwSblJfMDDVShKELp-q10H6bbvozn-fiuWvX_cV69r8CDv-XVD-gv2TEwsr/exec"; // from the deployment step
+  <p id="status"></p>
 
-  function toRadians(degrees) { return degrees * Math.PI / 180; }
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzA7inBhSTLd6yXc2hxlMKKYpzkFfj_Pm3wzFDJFH1c-o3kEa5tYT64uCObM7bbaViQ/exec"; // from step 2
 
-  function haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = toRadians(lat2 - lat1);
-    const dLon = toRadians(lon2 - lon1);
-    const a = Math.sin(dLat/2) ** 2 +
-              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-              Math.sin(dLon/2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
+    document.getElementById("attendanceForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      document.getElementById("status").innerText = "Getting location...";
 
-  async function submitName() {
-    const nameInput = document.getElementById("userName");
-    const submitButton = document.getElementById("submitButton");
-    const name = nameInput.value.trim();
-
-    if (!name) { document.getElementById("status").textContent = "Please enter a valid name (letters and spaces only)."; return; }
-    if (!/^[a-zA-Z\s]+$/.test(name)) { document.getElementById("status").textContent = "Name must contain only letters and spaces."; return; }
-
-    submitButton.disabled = true;
-    submitButton.textContent = "Submitting...";
-    document.getElementById("status").textContent = "Submitting your name...";
-
-    try {
-      const payload = {
-        name,
-        // Recommended: send coords so server confirms radius too
-        lat: window.userLat,
-        lon: window.userLon
-      };
-
-      const response = await fetch(webAppUrl, {
-        method: "POST",
-        // 🔴 Required to avoid CORS preflight with Apps Script
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-        // no need for mode:"cors" — default is fine
-      });
-
-      const result = await response.json();
-
-      document.getElementById("status").textContent = result.message;
-      if (result.status === "success") {
-        document.getElementById("nameForm").style.display = "none";
-        let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
-        if (!attendees.includes(name)) {
-          attendees.push(name);
-          localStorage.setItem("attendees", JSON.stringify(attendees));
-        }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          sendData(pos.coords.latitude, pos.coords.longitude);
+        }, () => {
+          document.getElementById("status").innerText = "Location permission denied.";
+        });
       } else {
-        document.getElementById("retryButton").style.display = "block";
+        document.getElementById("status").innerText = "Geolocation not supported.";
       }
-    } catch (error) {
-      document.getElementById("status").textContent = "Error submitting name: " + error.message + ". Please try again.";
-      document.getElementById("retryButton").style.display = "block";
-    } finally {
-      submitButton.disabled = false;
-      submitButton.textContent = "Submit";
-    }
-  }
-
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      window.userLat = position.coords.latitude;
-      window.userLon = position.coords.longitude;
-      const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
-
-      if (distance <= allowedDistance) {
-        document.getElementById("status").textContent = "Location confirmed. Please enter your name.";
-        document.getElementById("nameForm").style.display = "block";
-      } else {
-        document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
-        document.getElementById("retryButton").style.display = "block";
-      }
-    }, function(error) {
-      let errorMessage = "Location access denied or unavailable.";
-      switch (error.code) {
-        case error.PERMISSION_DENIED: errorMessage = "Please allow location access in your browser and click Retry."; break;
-        case error.POSITION_UNAVAILABLE: errorMessage = "Unable to determine your location. Ensure location services are enabled and click Retry."; break;
-        case error.TIMEOUT: errorMessage = "Location request timed out. Check your connection and click Retry."; break;
-        default: errorMessage = "An error occurred while accessing your location. Please click Retry.";
-      }
-      document.getElementById("status").textContent = errorMessage;
-      document.getElementById("retryButton").style.display = "block";
     });
-  } else {
-    document.getElementById("status").textContent = "Geolocation not supported by your browser. Please use a modern browser like Chrome or Firefox.";
-    document.getElementById("retryButton").style.display = "block";
-  }
-</script>
+
+    function sendData(lat, lon) {
+      const name = document.getElementById("name").value.trim();
+      const yearBatch = document.getElementById("yearBatch").value.trim();
+
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ name, yearBatch, lat, lon }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("status").innerText = data.message;
+      })
+      .catch(err => {
+        document.getElementById("status").innerText = "Error: " + err;
+      });
+    }
+  </script>
+</body>
+</html>
