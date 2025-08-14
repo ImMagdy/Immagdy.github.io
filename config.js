@@ -1,6 +1,6 @@
 // --- Edit these ---
 window.CONF = {
-  API_URL: "https://script.google.com/macros/s/AKfycbxR2DQkYYIQME0A3PbgAYDk50R5p2H7Iapdxgf37ghGxRaCoztl_pbjRMZw8_qXY2DS/exec", // <— from Apps Script
+  API_URL: "https://script.google.com/macros/s/AKfycbxlIw2_6DrUi8JX-wKfSrYsrCa4j7oHs-_sVvrPuF8rbw-aaR46gn1Ot7ANEdqy6gvY/exec", // <— from Apps Script
   EVENT_NAME: "Morbidity and Mortality — Aug 15, 2025",
   // The following are informational for the UI; the server is the source of truth.
   VENUE: {
