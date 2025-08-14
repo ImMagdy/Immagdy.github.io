@@ -81,18 +81,34 @@
       max-width: 350px;
       width: 100%;
     }
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       padding: 10px;
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 6px;
       outline: none;
       width: 70%;
-      margin-right: 10px;
+      margin: 10px 0;
       transition: border-color 0.3s;
     }
-    input[type="text"]:focus {
+    input[type="text"]:focus, input[type="number"]:focus {
       border-color: #0097a7;
+    }
+
+    /* ===== Spinner Styling ===== */
+    .spinner {
+      display: none;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0097a7;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -105,7 +121,9 @@
 
   <div id="nameForm">
     <input type="text" id="userName" placeholder="Enter your full name" required>
+    <input type="number" id="yearBatch" placeholder="Enter your year batch (e.g., 2023)" min="1900" max="2100" required>
     <button id="submitButton" onclick="submitName()">Submit</button>
+    <div id="spinner" class="spinner"></div>
   </div>
 
 <script>
@@ -129,19 +147,27 @@
 
   async function submitName() {
     const nameInput = document.getElementById("userName");
+    const yearBatchInput = document.getElementById("yearBatch");
     const submitButton = document.getElementById("submitButton");
+    const spinner = document.getElementById("spinner");
     const name = nameInput.value.trim();
+    const yearBatch = yearBatchInput.value.trim();
 
     if (!name) { document.getElementById("status").textContent = "Please enter a valid name."; return; }
     if (!/^[a-zA-Z\s]+$/.test(name)) { document.getElementById("status").textContent = "Name must contain only letters and spaces."; return; }
+    if (!yearBatch || isNaN(yearBatch) || yearBatch < 1900 || yearBatch > 2100) {
+      document.getElementById("status").textContent = "Please enter a valid year batch (1900-2100)."; return;
+    }
 
     submitButton.disabled = true;
     submitButton.textContent = "Submitting...";
-    document.getElementById("status").textContent = "Submitting your name...";
+    spinner.style.display = "block";
+    document.getElementById("status").textContent = "Submitting your information...";
 
     try {
       const payload = {
         name,
+        yearBatch: parseInt(yearBatch),
         lat: window.userLat,
         lon: window.userLon
       };
@@ -158,19 +184,21 @@
       if (result.status === "success") {
         document.getElementById("nameForm").style.display = "none";
         let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
-        if (!attendees.includes(name)) {
-          attendees.push(name);
+        const attendeeEntry = `${name} (${yearBatch})`;
+        if (!attendees.includes(attendeeEntry)) {
+          attendees.push(attendeeEntry);
           localStorage.setItem("attendees", JSON.stringify(attendees));
         }
       } else {
         document.getElementById("retryButton").style.display = "block";
       }
     } catch (error) {
-      document.getElementById("status").textContent = "Error submitting name: " + error.message;
+      document.getElementById("status").textContent = "Error submitting information: " + error.message;
       document.getElementById("retryButton").style.display = "block";
     } finally {
       submitButton.disabled = false;
       submitButton.textContent = "Submit";
+      spinner.style.display = "none";
     }
   }
 
@@ -181,7 +209,7 @@
       const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
 
       if (distance <= allowedDistance) {
-        document.getElementById("status").textContent = "✅ Location confirmed. Please enter your name.";
+        document.getElementById("status").textContent = "✅ Location confirmed. Please enter your name and year batch.";
         document.getElementById("nameForm").style.display = "block";
       } else {
         document.getElementById("status").textContent = `❌ Access denied. You are ${Math.round(distance)} meters away.`;
