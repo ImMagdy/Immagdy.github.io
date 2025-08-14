@@ -37,114 +37,103 @@
     <button id="submitButton" onclick="submitName()">Submit</button>
   </div>
 
-  <script>
-    const targetLat = 30.0768402;
-    const targetLon = 31.2907355;
-    const allowedDistance = 9000; // meters
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbzA5mo5-haXKaGxdtbmBEVETwHqLVcJGPPRDjhZUuvVxRPh1xC9_8zOOEuLpKCjocyrLw/exec";
+<script>
+  const targetLat = 30.0768402;
+  const targetLon = 31.2907355;
+  const allowedDistance = 9000; // meters (client-side)
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbzk0oopNIh2YY3YwzyRRujB2KPo-Ocr-UatAPztWCumiZi3Bjm3hrwXa-SYPRq92Jb4Gw/exec"; // from the deployment step
 
-    function toRadians(degrees) {
-      return degrees * Math.PI / 180;
-    }
+  function toRadians(degrees) { return degrees * Math.PI / 180; }
 
-    function haversineDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371000; // Earth radius in meters
-      const dLat = toRadians(lat2 - lat1);
-      const dLon = toRadians(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-                Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
+  function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a = Math.sin(dLat/2) ** 2 +
+              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+              Math.sin(dLon/2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
 
-    async function submitName() {
-      const nameInput = document.getElementById("userName");
-      const submitButton = document.getElementById("submitButton");
-      const name = nameInput.value.trim();
+  async function submitName() {
+    const nameInput = document.getElementById("userName");
+    const submitButton = document.getElementById("submitButton");
+    const name = nameInput.value.trim();
 
-      if (!name) {
-        document.getElementById("status").textContent = "Please enter a valid name (letters and spaces only).";
-        return;
-      }
-      if (!/^[a-zA-Z\s]+$/.test(name)) {
-        document.getElementById("status").textContent = "Name must contain only letters and spaces.";
-        return;
-      }
+    if (!name) { document.getElementById("status").textContent = "Please enter a valid name (letters and spaces only)."; return; }
+    if (!/^[a-zA-Z\s]+$/.test(name)) { document.getElementById("status").textContent = "Name must contain only letters and spaces."; return; }
 
-      submitButton.disabled = true;
-      submitButton.textContent = "Submitting...";
-      document.getElementById("status").textContent = "Submitting your name...";
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting...";
+    document.getElementById("status").textContent = "Submitting your name...";
 
-      try {
-        console.log("Sending POST request to:", webAppUrl);
-        console.log("Payload:", { name });
-        const response = await fetch(webAppUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-          mode: "cors"
-        });
-        const result = await response.json();
-        console.log("Response:", result);
+    try {
+      const payload = {
+        name,
+        // Recommended: send coords so server confirms radius too
+        lat: window.userLat,
+        lon: window.userLon
+      };
 
-        document.getElementById("status").textContent = result.message;
-        if (result.status === "success") {
-          document.getElementById("nameForm").style.display = "none";
-          // Store name locally as a backup
-          let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
-          if (!attendees.includes(name)) {
-            attendees.push(name);
-            localStorage.setItem("attendees", JSON.stringify(attendees));
-          }
-        } else {
-          document.getElementById("retryButton").style.display = "block";
-        }
-      } catch (error) {
-        console.error("Fetch error:", error);
-        document.getElementById("status").textContent = "Error submitting name: " + error.message + ". Please try again.";
-        document.getElementById("retryButton").style.display = "block";
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = "Submit";
-      }
-    }
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        window.userLat = position.coords.latitude;
-        window.userLon = position.coords.longitude;
-        const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
-        
-        if (distance <= allowedDistance) {
-          document.getElementById("status").textContent = "Location confirmed. Please enter your name.";
-          document.getElementById("nameForm").style.display = "block";
-        } else {
-          document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
-          document.getElementById("retryButton").style.display = "block";
-        }
-      }, function(error) {
-        let errorMessage = "Location access denied or unavailable.";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Please allow location access in your browser and click Retry.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Unable to determine your location. Ensure location services are enabled and click Retry.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out. Check your connection and click Retry.";
-            break;
-          default:
-            errorMessage = "An error occurred while accessing your location. Please click Retry.";
-        }
-        document.getElementById("status").textContent = errorMessage;
-        document.getElementById("retryButton").style.display = "block";
+      const response = await fetch(webAppUrl, {
+        method: "POST",
+        // 🔴 Required to avoid CORS preflight with Apps Script
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+        // no need for mode:"cors" — default is fine
       });
-    } else {
-      document.getElementById("status").textContent = "Geolocation not supported by your browser. Please use a modern browser like Chrome or Firefox.";
+
+      const result = await response.json();
+
+      document.getElementById("status").textContent = result.message;
+      if (result.status === "success") {
+        document.getElementById("nameForm").style.display = "none";
+        let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
+        if (!attendees.includes(name)) {
+          attendees.push(name);
+          localStorage.setItem("attendees", JSON.stringify(attendees));
+        }
+      } else {
+        document.getElementById("retryButton").style.display = "block";
+      }
+    } catch (error) {
+      document.getElementById("status").textContent = "Error submitting name: " + error.message + ". Please try again.";
       document.getElementById("retryButton").style.display = "block";
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit";
     }
-  </script>
+  }
+
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      window.userLat = position.coords.latitude;
+      window.userLon = position.coords.longitude;
+      const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
+
+      if (distance <= allowedDistance) {
+        document.getElementById("status").textContent = "Location confirmed. Please enter your name.";
+        document.getElementById("nameForm").style.display = "block";
+      } else {
+        document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
+        document.getElementById("retryButton").style.display = "block";
+      }
+    }, function(error) {
+      let errorMessage = "Location access denied or unavailable.";
+      switch (error.code) {
+        case error.PERMISSION_DENIED: errorMessage = "Please allow location access in your browser and click Retry."; break;
+        case error.POSITION_UNAVAILABLE: errorMessage = "Unable to determine your location. Ensure location services are enabled and click Retry."; break;
+        case error.TIMEOUT: errorMessage = "Location request timed out. Check your connection and click Retry."; break;
+        default: errorMessage = "An error occurred while accessing your location. Please click Retry.";
+      }
+      document.getElementById("status").textContent = errorMessage;
+      document.getElementById("retryButton").style.display = "block";
+    });
+  } else {
+    document.getElementById("status").textContent = "Geolocation not supported by your browser. Please use a modern browser like Chrome or Firefox.";
+    document.getElementById("retryButton").style.display = "block";
+  }
+</script>
 </body>
 </html>
