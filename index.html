@@ -1,235 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Meeting Attendance Check</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ===== Overall Page Styling ===== */
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      text-align: center;
-      background: linear-gradient(135deg, #eaf4f8, #cbe1e7);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+      margin: 0;
+      padding: 40px 20px;
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      padding: 20px;
-      color: #033649;
+      justify-content: center;
     }
-
+    .container {
+      max-width: 450px;
+      width: 100%;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .container:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    }
     h2 {
-      font-size: 2rem;
-      margin-bottom: 10px;
-      color: #055a6d;
+      text-align: center;
+      color: #1f2937;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
     }
-
-    p {
-      font-size: 1rem;
-      max-width: 500px;
-      line-height: 1.5;
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: #374151;
+      font-size: 14px;
+      font-weight: 500;
     }
-
-    /* ===== Status Badge ===== */
-    #status {
-      display: inline-block;
-      padding: 10px 15px;
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #d1d5db;
       border-radius: 8px;
-      background: #ffffffcc;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      font-weight: 500;
-      margin: 15px 0;
+      font-size: 16px;
+      color: #1f2937;
+      background: #f9fafb;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      box-sizing: border-box;
     }
-
-    /* ===== Buttons ===== */
+    input:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
     button {
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 6px;
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
       border: none;
-      background: #0097a7;
       color: white;
+      font-size: 16px;
       font-weight: 500;
-      transition: background 0.3s, transform 0.2s;
+      border-radius: 8px;
       cursor: pointer;
+      position: relative;
+      transition: background 0.3s ease, transform 0.2s ease;
     }
-    button:hover {
-      background: #007c8a;
+    button:hover:not(:disabled) {
+      background: linear-gradient(90deg, #4338ca, #6d28d9);
       transform: translateY(-2px);
     }
-    #submitButton:disabled {
+    button:disabled {
+      background: #d1d5db;
       cursor: not-allowed;
-      background: #80d0d5;
     }
-
-    #retryButton {
-      margin-top: 15px;
-      background: #e85d75;
-    }
-    #retryButton:hover {
-      background: #c94a61;
-    }
-
-    /* ===== Input Styling ===== */
-    #nameForm {
-      margin-top: 20px;
+    .message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
       display: none;
-      background: #ffffffcc;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-      max-width: 350px;
-      width: 100%;
+      transition: opacity 0.3s ease;
     }
-    input[type="text"], input[type="number"] {
-      padding: 10px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      outline: none;
-      width: 70%;
-      margin: 10px 0;
-      transition: border-color 0.3s;
+    .success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
     }
-    input[type="text"]:focus, input[type="number"]:focus {
-      border-color: #0097a7;
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
     }
-
-    /* ===== Spinner Styling ===== */
     .spinner {
       display: none;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #0097a7;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top: 4px solid #ffffff;
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      animation: spin 1s linear infinite;
-      margin: 10px auto;
+      width: 28px;
+      height: 28px;
+      animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    button:disabled .spinner {
+      display: block;
+    }
+    button:disabled span {
+      visibility: hidden;
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+      h2 {
+        font-size: 20px;
+      }
+      input, button {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 <body>
-  <h2>Meeting Attendance</h2>
-  <p id="status">Please allow location access.</p>
-  <p style="opacity:0.8;">Ensure location services are enabled on your device for accurate verification.</p>
+  <div class="container">
+    <h2>Attendance Form</h2>
+    <form id="attendanceForm">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="name" placeholder="Enter your name" required />
 
-  <button id="retryButton" style="display: none;" onclick="location.reload()">Retry Location</button>
+      <label for="yearBatch">Year Batch</label>
+      <input type="number" id="yearBatch" name="yearBatch" placeholder="Enter your year batch" required />
 
-  <div id="nameForm">
-    <input type="text" id="userName" placeholder="Enter your full name" required>
-    <input type="number" id="yearBatch" placeholder="Enter your year batch (e.g., 2023)" min="1900" max="2100" required>
-    <button id="submitButton" onclick="submitName()">Submit</button>
-    <div id="spinner" class="spinner"></div>
+      <button type="submit" id="submitBtn"><span>Submit Attendance</span><div class="spinner"></div></button>
+    </form>
+    <div class="message" id="messageBox"></div>
   </div>
 
-<script>
-  const targetLat = 30.0768402;
-  const targetLon = 31.2907355;
-  const allowedDistance = 9000; // meters (client-side)
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbwGe9Vt_RgXlzPET8kZ6-Ll3_9yecojZcnj6DAWBEB152WlNDzZKrPamP_3tkZ6RPif7w/exec"; 
+  <script>
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbznHDfb-sRLifkMbrxekMabIJUlZqnzSjKhlcDOuRpKEL_tkSIZe8g8UveHYdJxNruL/exec";
 
-  function toRadians(degrees) { return degrees * Math.PI / 180; }
+    document.getElementById("attendanceForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-  function haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = toRadians(lat2 - lat1);
-    const dLon = toRadians(lon2 - lon1);
-    const a = Math.sin(dLat/2) ** 2 +
-              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-              Math.sin(dLon/2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
+      const submitBtn = document.getElementById("submitBtn");
+      const name = document.getElementById("name").value.trim();
+      const yearBatch = document.getElementById("yearBatch").value.trim();
+      const messageBox = document.getElementById("messageBox");
 
-  async function submitName() {
-    const nameInput = document.getElementById("userName");
-    const yearBatchInput = document.getElementById("yearBatch");
-    const submitButton = document.getElementById("submitButton");
-    const spinner = document.getElementById("spinner");
-    const name = nameInput.value.trim();
-    const yearBatch = yearBatchInput.value.trim();
+      messageBox.style.display = "none";
+      submitBtn.disabled = true;
 
-    if (!name) { document.getElementById("status").textContent = "Please enter a valid name."; return; }
-    if (!/^[a-zA-Z\s]+$/.test(name)) { document.getElementById("status").textContent = "Name must contain only letters and spaces."; return; }
-    if (!yearBatch || isNaN(yearBatch) || yearBatch < 1900 || yearBatch > 2100) {
-      document.getElementById("status").textContent = "Please enter a valid year batch (1900-2100)."; return;
-    }
+      const hasSubmitted = localStorage.getItem("attendanceSubmitted");
+      if (hasSubmitted) {
+        showMessage("Only one submission per device is allowed.", "error");
+        submitBtn.disabled = false;
+        return;
+      }
 
-    submitButton.disabled = true;
-    submitButton.textContent = "Submitting...";
-    spinner.style.display = "block";
-    document.getElementById("status").textContent = "Submitting your information...";
+      if (!name || !yearBatch) {
+        showMessage("Please fill out all fields.", "error");
+        submitBtn.disabled = false;
+        return;
+      }
 
-    try {
-      const payload = {
-        name,
-        yearBatch: parseInt(yearBatch),
-        lat: window.userLat,
-        lon: window.userLon
-      };
+      if (!/^[\u0600-\u06FFa-zA-Z\s]+$/.test(name)) {
+        showMessage("Name must contain only letters and spaces.", "error");
+        submitBtn.disabled = false;
+        return;
+      }
 
-      const response = await fetch(webAppUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
+      if (isNaN(yearBatch) || yearBatch < 1900 || yearBatch > 2100) {
+        showMessage("Year batch must be between 1900 and 2100.", "error");
+        submitBtn.disabled = false;
+        return;
+      }
 
-      const result = await response.json();
+      let ipAddress = "";
+      try {
+        const ipResponse = await fetch("https://api.ipify.org?format=json");
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip;
+      } catch (err) {
+        showMessage("Unable to retrieve IP address.", "error");
+        submitBtn.disabled = false;
+        return;
+      }
 
-      document.getElementById("status").textContent = result.message;
-      if (result.status === "success") {
-        document.getElementById("nameForm").style.display = "none";
-        let attendees = JSON.parse(localStorage.getItem("attendees") || "[]");
-        const attendeeEntry = `${name} (${yearBatch})`;
-        if (!attendees.includes(attendeeEntry)) {
-          attendees.push(attendeeEntry);
-          localStorage.setItem("attendees", JSON.stringify(attendees));
-        }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            sendAttendance(name, yearBatch, position.coords.latitude, position.coords.longitude, ipAddress);
+          },
+          error => {
+            showMessage("Unable to retrieve location.", "error");
+            submitBtn.disabled = false;
+          }
+        );
       } else {
-        document.getElementById("retryButton").style.display = "block";
+        showMessage("Geolocation is not supported by this browser.", "error");
+        submitBtn.disabled = false;
       }
-    } catch (error) {
-      document.getElementById("status").textContent = "Error submitting information: " + error.message;
-      document.getElementById("retryButton").style.display = "block";
-    } finally {
-      submitButton.disabled = false;
-      submitButton.textContent = "Submit";
-      spinner.style.display = "none";
-    }
-  }
-
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      window.userLat = position.coords.latitude;
-      window.userLon = position.coords.longitude;
-      const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
-
-      if (distance <= allowedDistance) {
-        document.getElementById("status").textContent = "✅ Location confirmed. Please enter your name and year batch.";
-        document.getElementById("nameForm").style.display = "block";
-      } else {
-        document.getElementById("status").textContent = `❌ Access denied. You are ${Math.round(distance)} meters away.`;
-        document.getElementById("retryButton").style.display = "block";
-      }
-    }, function(error) {
-      let errorMessage = "Location access denied or unavailable.";
-      switch (error.code) {
-        case error.PERMISSION_DENIED: errorMessage = "Please allow location access in your browser and click Retry."; break;
-        case error.POSITION_UNAVAILABLE: errorMessage = "Unable to determine your location. Ensure location services are enabled."; break;
-        case error.TIMEOUT: errorMessage = "Location request timed out. Check your connection."; break;
-        default: errorMessage = "An error occurred while accessing your location.";
-      }
-      document.getElementById("status").textContent = errorMessage;
-      document.getElementById("retryButton").style.display = "block";
     });
-  } else {
-    document.getElementById("status").textContent = "Geolocation not supported. Please use a modern browser.";
-    document.getElementById("retryButton").style.display = "block";
-  }
-</script>
+
+    function sendAttendance(name, yearBatch, lat, lon, ipAddress) {
+      fetch(webAppUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          name: name,
+          yearBatch: yearBatch,
+          lat: lat,
+          lon: lon,
+          ip: ipAddress
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          localStorage.setItem("attendanceSubmitted", "true");
+          showMessage(data.message, "success");
+        } else {
+          showMessage(data.message, "error");
+        }
+      })
+      .catch(err => {
+        showMessage("An error occurred while submitting.", "error");
+      })
+      .finally(() => {
+        document.getElementById("submitBtn").disabled = false;
+      });
+    }
+
+    function showMessage(msg, type) {
+      const messageBox = document.getElementById("messageBox");
+      messageBox.textContent = msg;
+      messageBox.className = "message " + type;
+      messageBox.style.display = "block";
+    }
+  </script>
 </body>
 </html>
