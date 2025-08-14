@@ -4,36 +4,107 @@
   <meta charset="UTF-8">
   <title>Meeting Attendance Check</title>
   <style>
+    /* ===== Overall Page Styling ===== */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
       text-align: center;
-      padding-top: 50px;
+      background: linear-gradient(135deg, #eaf4f8, #cbe1e7);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #033649;
     }
-    #nameForm {
-      margin-top: 20px;
-      display: none;
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #055a6d;
     }
-    input[type="text"] {
-      padding: 8px;
-      margin-right: 10px;
+
+    p {
+      font-size: 1rem;
+      max-width: 500px;
+      line-height: 1.5;
     }
+
+    /* ===== Status Badge ===== */
+    #status {
+      display: inline-block;
+      padding: 10px 15px;
+      border-radius: 8px;
+      background: #ffffffcc;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-weight: 500;
+      margin: 15px 0;
+    }
+
+    /* ===== Buttons ===== */
     button {
-      padding: 8px 16px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #0097a7;
+      color: white;
+      font-weight: 500;
+      transition: background 0.3s, transform 0.2s;
       cursor: pointer;
+    }
+    button:hover {
+      background: #007c8a;
+      transform: translateY(-2px);
     }
     #submitButton:disabled {
       cursor: not-allowed;
-      opacity: 0.6;
+      background: #80d0d5;
+    }
+
+    #retryButton {
+      margin-top: 15px;
+      background: #e85d75;
+    }
+    #retryButton:hover {
+      background: #c94a61;
+    }
+
+    /* ===== Input Styling ===== */
+    #nameForm {
+      margin-top: 20px;
+      display: none;
+      background: #ffffffcc;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      max-width: 350px;
+      width: 100%;
+    }
+    input[type="text"] {
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+      width: 70%;
+      margin-right: 10px;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      border-color: #0097a7;
     }
   </style>
 </head>
 <body>
-  <h2>Checking Your Location…</h2>
+  <h2>Meeting Attendance</h2>
   <p id="status">Please allow location access.</p>
-  <p>Please allow location access in your browser. If location fails, ensure location services are enabled on your device.</p>
+  <p style="opacity:0.8;">Ensure location services are enabled on your device for accurate verification.</p>
+
   <button id="retryButton" style="display: none;" onclick="location.reload()">Retry Location</button>
+
   <div id="nameForm">
-    <input type="text" id="userName" placeholder="Enter your name" required>
+    <input type="text" id="userName" placeholder="Enter your full name" required>
     <button id="submitButton" onclick="submitName()">Submit</button>
   </div>
 
@@ -41,7 +112,7 @@
   const targetLat = 30.0768402;
   const targetLon = 31.2907355;
   const allowedDistance = 9000; // meters (client-side)
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbzk0oopNIh2YY3YwzyRRujB2KPo-Ocr-UatAPztWCumiZi3Bjm3hrwXa-SYPRq92Jb4Gw/exec"; // from the deployment step
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbzk0oopNIh2YY3YwzyRRujB2KPo-Ocr-UatAPztWCumiZi3Bjm3hrwXa-SYPRq92Jb4Gw/exec"; 
 
   function toRadians(degrees) { return degrees * Math.PI / 180; }
 
@@ -61,7 +132,7 @@
     const submitButton = document.getElementById("submitButton");
     const name = nameInput.value.trim();
 
-    if (!name) { document.getElementById("status").textContent = "Please enter a valid name (letters and spaces only)."; return; }
+    if (!name) { document.getElementById("status").textContent = "Please enter a valid name."; return; }
     if (!/^[a-zA-Z\s]+$/.test(name)) { document.getElementById("status").textContent = "Name must contain only letters and spaces."; return; }
 
     submitButton.disabled = true;
@@ -71,17 +142,14 @@
     try {
       const payload = {
         name,
-        // Recommended: send coords so server confirms radius too
         lat: window.userLat,
         lon: window.userLon
       };
 
       const response = await fetch(webAppUrl, {
         method: "POST",
-        // 🔴 Required to avoid CORS preflight with Apps Script
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
-        // no need for mode:"cors" — default is fine
       });
 
       const result = await response.json();
@@ -98,7 +166,7 @@
         document.getElementById("retryButton").style.display = "block";
       }
     } catch (error) {
-      document.getElementById("status").textContent = "Error submitting name: " + error.message + ". Please try again.";
+      document.getElementById("status").textContent = "Error submitting name: " + error.message;
       document.getElementById("retryButton").style.display = "block";
     } finally {
       submitButton.disabled = false;
@@ -113,25 +181,25 @@
       const distance = haversineDistance(window.userLat, window.userLon, targetLat, targetLon);
 
       if (distance <= allowedDistance) {
-        document.getElementById("status").textContent = "Location confirmed. Please enter your name.";
+        document.getElementById("status").textContent = "✅ Location confirmed. Please enter your name.";
         document.getElementById("nameForm").style.display = "block";
       } else {
-        document.getElementById("status").textContent = `Access denied. You are ${Math.round(distance)} meters away.`;
+        document.getElementById("status").textContent = `❌ Access denied. You are ${Math.round(distance)} meters away.`;
         document.getElementById("retryButton").style.display = "block";
       }
     }, function(error) {
       let errorMessage = "Location access denied or unavailable.";
       switch (error.code) {
         case error.PERMISSION_DENIED: errorMessage = "Please allow location access in your browser and click Retry."; break;
-        case error.POSITION_UNAVAILABLE: errorMessage = "Unable to determine your location. Ensure location services are enabled and click Retry."; break;
-        case error.TIMEOUT: errorMessage = "Location request timed out. Check your connection and click Retry."; break;
-        default: errorMessage = "An error occurred while accessing your location. Please click Retry.";
+        case error.POSITION_UNAVAILABLE: errorMessage = "Unable to determine your location. Ensure location services are enabled."; break;
+        case error.TIMEOUT: errorMessage = "Location request timed out. Check your connection."; break;
+        default: errorMessage = "An error occurred while accessing your location.";
       }
       document.getElementById("status").textContent = errorMessage;
       document.getElementById("retryButton").style.display = "block";
     });
   } else {
-    document.getElementById("status").textContent = "Geolocation not supported by your browser. Please use a modern browser like Chrome or Firefox.";
+    document.getElementById("status").textContent = "Geolocation not supported. Please use a modern browser.";
     document.getElementById("retryButton").style.display = "block";
   }
 </script>
