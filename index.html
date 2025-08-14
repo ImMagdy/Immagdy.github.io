@@ -1,68 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meeting Attendance Check</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
-    #nameForm { margin-top: 20px; display: none; }
-    input[type="text"] { padding: 8px; margin-right: 10px; }
-    button { padding: 8px 16px; cursor: pointer; }
-    #submitButton:disabled { cursor: not-allowed; opacity: 0.6; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Conference Attendance</title>
+  <link rel="stylesheet" href="./style.css"/>
+  <meta name="theme-color" content="#ffffff">
 </head>
 <body>
-  <h2>Checking Your Location…</h2>
-  <p id="status">Please allow location access.</p>
-  <button id="retryButton" style="display:none;" onclick="location.reload()">Retry Location</button>
+  <main class="container">
+    <h1 id="title">Attendance</h1>
+    <div class="card">
+      <p id="eventLabel" class="muted"></p>
 
-  <div id="nameForm">
-    <input type="text" id="userName" placeholder="Enter your name" required>
-    <button id="submitButton" onclick="submitName()" disabled>Submit</button>
-  </div>
+      <section id="locSection">
+        <p id="locStatus" class="muted">Requesting your location… please allow access.</p>
+        <button id="retryBtn" class="hidden">Retry Location</button>
+      </section>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzA7inBhSTLd6yXc2hxlMKKYpzkFfj_Pm3wzFDJFH1c-o3kEa5tYT64uCObM7bbaViQ/exec";
-    let lat, lon;
+      <section id="formSection" class="hidden">
+        <label for="name">Full Name</label>
+        <input id="name" type="text" placeholder="Enter your full name" autocomplete="name" required />
 
-    // Request location on load
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(position => {
-        lat = position.coords.latitude;
-        lon = position.coords.longitude;
-        document.getElementById("status").innerText = "Location confirmed. Please enter your name.";
-        document.getElementById("nameForm").style.display = "block";
-        document.getElementById("submitButton").disabled = false;
-      }, error => {
-        document.getElementById("status").innerText = "Location access denied.";
-        document.getElementById("retryButton").style.display = "inline-block";
-      });
-    } else {
-      document.getElementById("status").innerText = "Geolocation not supported.";
-    }
+        <label for="yearBatch">Year Batch</label>
+        <input id="yearBatch" list="batchList" type="text" placeholder="e.g., 2025" required />
+        <datalist id="batchList">
+          <option value="2021"></option>
+          <option value="2022"></option>
+          <option value="2023"></option>
+          <option value="2024"></option>
+          <option value="2025"></option>
+          <option value="2026"></option>
+        </datalist>
 
-    function submitName() {
-      const name = document.getElementById("userName").value.trim();
-      if (!name) {
-        alert("Please enter your name.");
-        return;
-      }
+        <button id="submitBtn" disabled>Submit</button>
+      </section>
 
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, lat, lon })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("status").innerText = data.message;
-        document.getElementById("nameForm").style.display = "none";
-      })
-      .catch(err => {
-        document.getElementById("status").innerText = "Error: " + err;
-      });
-    }
-  </script>
+      <p id="msg" class="muted mt"></p>
+    </div>
+
+    <footer class="muted small">
+      Location is used once to verify you are on-site. We do not store your exact position beyond this check.
+    </footer>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
