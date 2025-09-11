@@ -6,6 +6,6 @@ window.CONF = {
   VENUE: {
     LAT: 30.0768402,
     LNG: 31.2907355,
-    RADIUS_M: 8000 // match your server during testing; tighten on-site
+    RADIUS_M: 150 // match your server during testing; tighten on-site
   }
 };
