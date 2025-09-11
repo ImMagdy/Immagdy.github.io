@@ -1,6 +1,6 @@
 // --- Edit these ---
 window.CONF = {
-  API_URL: "https://script.google.com/macros/s/AKfycbyUD3-JLNrUTd5XspVfW6qBpMNx9y_DGoKFXqRl8tgtUGCfd1RjCN8ev1efQMk0dxnE/exec", // <— from Apps Script
+  API_URL: "https://script.google.com/macros/s/AKfycbwDEwHlY9y8vIjX7iGz6z4i8eTKmKR3m0fLavFePts9RMTP1B-2msbsXHSlxxN9Kdx-/exec", // <— from Apps Script
   EVENT_NAME: "Scientific Day - September 12th 2025",
   // The following are informational for the UI; the server is the source of truth.
   VENUE: {
